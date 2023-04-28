@@ -17,6 +17,7 @@ global_values = ['free_ptr', 'fromspace_end']
 
 tuple_var_types = {}
 function_names = set()
+function_envs = {}
 
 def log(label, value):
     if global_logging:
@@ -49,9 +50,10 @@ def gensym(x):
 # op     ::= "add" | "sub" | "mult" | "not" | "or" | "and" | "eq" | "gt" | "gte" | "lt" | "lte"
 #          | "tuple" | "subscript"
 # Expr   ::= Var(x) | Constant(n) | Prim(op, List[Expr]) | Begin(Stmts, Expr)
-#          | Call(Expr, List[Expr])
+#          | Call(Expr, List[Expr]) | Lambda(List[Tuple[str, type]], Expr) 
 # Stmt   ::= Assign(x, Expr) | Print(Expr) | If(Expr, Stmts, Stmts) | While(Expr, Stmts)
 #          | Return(Expr) | FunctionDef(str, List[Tuple[str, type]], List[Stmt], type)
+#          | AnnAssign(Var, Type, Expr, 0)
 # Stmts  ::= List[Stmt]
 # LFun   ::= Program(Stmts)
 
@@ -72,6 +74,67 @@ def typecheck(program: Program) -> Program:
     """
 
     pass
+
+def uniquify(program: Program) -> Program:
+    """
+    Ensures the every parameter in every function definition is unique.
+    """
+    def uniquify_stmt(stmt: Stmt) -> Stmt:
+        match stmt:
+            case FunctionDef(name, params, body, return_type):
+                new_params = [(gensym(param[0]), param[1]) for param in params]
+                return FunctionDef(name, new_params, body, return_type)
+            case _:
+                return stmt
+            
+    new_stmts = []
+    for stmt in program.stmts:
+        new_stmts.append(uniquify_stmt(stmt))
+    return Program(new_stmts)
+
+def convert_assignments(program: Program) -> Program:
+    AF: set(str) = set()
+
+    def assigned_var_stmt(stmt: Stmt, env: TEnv) -> Tuple(set(str), set(str)):
+        """
+        returns the set of variables that
+        occur in the left-hand side of an assignment statement 
+        and otherwise returns the empty set.
+        """
+        assigned_vars = set()
+        free_vars = set()
+        match stmt:
+            case FunctionDef(name, params, body, return_type):
+                for statement in body:
+                    if isinstance(statement, Assign| AnnAssign):
+                        assigned_vars.add(statement.name)
+                        free_vars.add(free_variables(statement.rhs, [param[0] for param in params]))
+                return assigned_vars, free_vars
+            case _:
+                return set(), set()
+
+    def free_variables(expr: Expr, params: List[str, type]) -> set(str):
+        """
+        returns the set of variables that occur free in expr.
+        """
+        match expr:
+                case Var(x):
+                    if x in params:
+                        return set()
+                    else:
+                        return set(x)
+                case Constant(n):
+                    return set()
+                case Prim(op, args):
+                    return set([arg for arg in args if arg not in params])
+                case Lambda(lambda_params, body):
+                    return free_variables(body, lambda_params)
+
+    for stmt in program.stmts:
+        assigned_vars, free_vars = assigned_var_stmt(stmt)
+        AF += free_vars.union(assigned_vars)
+                
+    
 
 
 ##################################################

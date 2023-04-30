@@ -17,7 +17,7 @@ global_values = ['free_ptr', 'fromspace_end']
 
 tuple_var_types = {}
 function_names = set()
-function_envs = {}
+function_envs = {}  # Used for lexical scoping
 
 def log(label, value):
     if global_logging:
@@ -79,17 +79,21 @@ def uniquify(program: Program) -> Program:
     """
     Ensures the every parameter in every function definition is unique.
     """
-    def uniquify_stmt(stmt: Stmt) -> Stmt:
+    def uniquify_stmt(stmt: Stmt, env) -> Stmt:
         match stmt:
+            case Assign(x, expr):
+                pass
             case FunctionDef(name, params, body, return_type):
                 new_params = [(gensym(param[0]), param[1]) for param in params]
                 return FunctionDef(name, new_params, body, return_type)
+            # case AnnAssign():
+            #     pass
             case _:
                 return stmt
             
     new_stmts = []
     for stmt in program.stmts:
-        new_stmts.append(uniquify_stmt(stmt))
+        new_stmts.append(uniquify_stmt(stmt), env)
     return Program(new_stmts)
 
 def convert_assignments(program: Program) -> Program:

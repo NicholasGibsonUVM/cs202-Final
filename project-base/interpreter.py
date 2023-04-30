@@ -34,7 +34,7 @@ def eval_Lif(prog: Module) -> List[int]:
                     return eval_e(e, env)
                 case FunctionDef(name, args, body):
                     arg_names = [a.arg for a in args.args]
-                    env[name] = FunVal(arg_names, body, env.copy())
+                    env[name] = FunVal(arg_names, body, env.copy())  # storing definition time environment (value of it)
 
                 case Assign([Name(x)], e):
                     env[x] = eval_e(e, env)
@@ -58,8 +58,8 @@ def eval_Lif(prog: Module) -> List[int]:
             case Call(Name(fun_name), args):
                 fv = env[fun_name]
                 arg_vals = [eval_e(a, env) for a in args]
-                new_env = env.copy()
-                new_env.update(fv.env)
+                new_env = fv.env.copy()
+                # new_env.update(fv.env) # this does nothing?
                 for a, v in zip(fv.args, arg_vals):
                     new_env[a] = v
                 retval = eval_stmts(fv.body, new_env)

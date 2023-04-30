@@ -137,9 +137,6 @@ def convert_assignments(program: Program) -> Program:
     for stmt in program.stmts:
         assigned_vars, free_vars = assigned_var_stmt(stmt)
         AF += free_vars.union(assigned_vars)
-                
-    
-
 
 ##################################################
 # remove-complex-opera*
@@ -152,6 +149,87 @@ def convert_assignments(program: Program) -> Program:
 #          | Return(Expr) | FunctionDef(str, List[Tuple[str, type]], List[Stmt], type)
 # Stmts  ::= List[Stmt]
 # LFun   ::= Program(Stmts)
+
+def convert_to_closures(prog: Program) -> Program:
+
+    def ff_exp(e: Expr, bound_vars: Set[str]) -> Set[str]:
+        match e:
+            case Var(x):
+                if x not in bound_vars:
+                    return {x}
+                else:
+                    return set()
+            case Constant(n):
+                return set()
+            case Prim(op, exps):
+                free_vars = set()
+                for exp in exps:
+                    free_vars.union(ff_exp(exp, bound_vars))
+                return free_vars
+            case Call(e, exps):
+                free_vars = set()
+                free_vars.union(ff_exp(e, bound_vars))
+                for exp in exps:
+                    free_vars.union(ff_exp(exp, bound_vars))
+                return free_vars
+
+    def ff_stmts(stmts: List[Stmt], bound_vars: Set[str]) -> Set[str]:
+        free_vars = set()
+        for stmt in stmts:
+            match stmt:
+                case Assign(x, e):
+                    free_vars.union(ff_exp(e, bound_vars))
+                    bound_vars.union(x)
+                case Print(e):
+                    free_vars.union(ff_exp(e, bound_vars))
+                case If(e, s1, s2):
+                    free_vars.union(ff_exp(e, bound_vars))
+                    free_vars.union(ff_stmts(s1, bound_vars.copy()))
+                    free_vars.union(ff_stmts(s2, bound_vars.copy()))
+                case While(e, stmts):
+                    free_vars.union(ff_exp(e, bound_vars))
+                    free_vars.union(ff_stmts(stmts, bound_vars.copy()))
+                case Return(e):
+                    free_vars.union(ff_exp(e, bound_vars))
+                case FunctionDef(name, params, body, return_type):
+                    pass
+                case _:
+                    pass
+
+        return free_vars
+
+    def cc_stmt(stmt: Stmt, closure: List[str]) -> List[Stmt]:
+        match stmt:
+            case FunctionDef(name, params, body, return_type):
+                new_name = name + '_fun'
+                closure = [new_name]
+                free_variables = ff_stmts(body, set([param[0] for param in params]))
+                closure.extend(free_variables)
+                new_body = []
+                for stmt in body:
+                    new_body.extend(cc_stmt(stmt, closure))
+                #TODO: What is the type of the function call here?
+                new_params = params.append(("closure", Tuple[str]))
+                return [FunctionDef(new_name, params, new_body, return_type),
+                        Assign(name, Prim('tuple', [Var(x) for x in closure]))]
+            case _:
+                return [stmt]
+
+    """
+    Questions for Joe:
+    - General overview....again?
+    - What should the type of the pointer to the function be in the AST?
+    - How do we get the types of our free variables?
+    """
+
+    def cc_stmts(stmts: List[Stmt]) -> List[Stmt]:
+        new_stmts = []
+
+        for stmt in stmts:
+            closure = []
+            new_stmts.extend(cc_stmt(stmt, closure))
+
+    return Program(cc_stmts(prog.stmts))
 
 def rco(prog: Program) -> Program:
     """

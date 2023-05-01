@@ -1,3 +1,20 @@
+"""
+Contributors: Jared Krogsrud, Nick Gibson
+
+Completed so far:
+We've implemented most of the new pass "convert_to_closures"
+in which we've created several functions to help with the pass.
+Two functions ff_stmt and ff_exp recursively look for free variables
+within a certain context.
+The second set of functions uses these free variables to construct closures
+and transform functions to use these closures. This part is mostly complete
+but with significant debugging to do.
+
+We still need to edit select instructions, we also still hope to approach
+lambda functions.
+"""
+
+
 from typing import Set, Dict, Tuple
 import sys
 import traceback

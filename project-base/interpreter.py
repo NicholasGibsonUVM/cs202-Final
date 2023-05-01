@@ -59,7 +59,7 @@ def eval_Lif(prog: Module) -> List[int]:
                 fv = env[fun_name]
                 arg_vals = [eval_e(a, env) for a in args]
                 new_env = fv.env.copy()
-                # new_env.update(fv.env) # this does nothing?
+                new_env.update(fv.env)
                 for a, v in zip(fv.args, arg_vals):
                     new_env[a] = v
                 retval = eval_stmts(fv.body, new_env)

@@ -1,9 +1,9 @@
 x = 5
 
-def f():
+def f() -> int:
     x = 3
-    def g():
-        print(x)
-    return g
+    def g() -> int:
+        return x
+    return g()
 
-print(f()())
+print(f())

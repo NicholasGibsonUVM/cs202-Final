@@ -365,6 +365,11 @@ def rco(prog: Program) -> Program:
 
 
 def convert_to_closures(prog: Program) -> Program:
+    """
+    Convert to closures:
+    :param prog: An Ltup program
+    :return: An Ltup program with functions with a closure.
+    """
 
     def ff_exp(e: Expr, bound_vars: Set[str]) -> Set[str]:
         match e:

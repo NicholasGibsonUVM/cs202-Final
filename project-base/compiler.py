@@ -80,6 +80,11 @@ class Callable:
     args: List[type]
     output_type: type
 
+@dataclass
+class Closure:
+    name: str
+    free_vars: Set[str]
+
 
 TEnv = Dict[str, Callable | Tuple | type]
 
@@ -440,19 +445,39 @@ def convert_to_closures(prog: Program) -> Program:
         match stmt:
             case FunctionDef(name, params, body, return_type):
                 new_name = name + '_fun'
+
+                # Update the function_names with new name
                 function_names.remove(name)
                 function_names.add(new_name)
+
+                # Start creation of the new closure tuple (as list so we can build it)
                 closure = [new_name]
+
+                # Find free variables within the body, passing in set of "bound" variables, i.e those located in
+                # parameters
                 free_variables = ff_stmts(
                     body, set([param[0] for param in params]))
+
+                # Add these free variables to the newly created closure
                 closure.extend(free_variables)
+
+                # We need to update the body of the function so that the first statement within
+                # is setting the values for all free variables
                 new_body = []
                 new_body.extend([Assign(x, Prim('subscript', [Var('closure'), Constant(
                     i)])) for i, x in enumerate(closure) if i != 0])
+
+                # Using the closure
                 for stmt in body:
                     new_body.extend(cc_stmt(stmt, closure))
+
+                # Add the closure to the parameters with type "Closure"
                 params.append(("closure", "Closure"))
+
+                # What's happening here again?
                 tuple_var_types[name] = [None for _ in range(len(closure))]
+
+                # Do we need add the variable names or values to the closure?
                 return [FunctionDef(new_name, params, new_body, return_type),
                         Assign(name, Prim('tuple', [Var(x) for x in closure]))]
             case Assign(x, e):

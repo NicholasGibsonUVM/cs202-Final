@@ -32,7 +32,7 @@ f_funlabel_14:
   movq %r12, 8(%r11)
   movq %rdx, %r11
   movq %rbx, 16(%r11)
-  movq %rdx, %rdx
+  leaq g(%rip), %rdx
   movq %rdx, %r11
   movq 8(%r11), %rcx
   movq %rdx, %rdi
@@ -85,11 +85,11 @@ mainlabel_11:
   movq $3, 0(%r11)
   movq %rdx, %r11
   movq %rbx, 8(%r11)
-  movq %rdx, %rdx
-  movq %rdx, %r11
-  movq 8(%r11), %rcx
-  movq %rdx, %rdi
-  callq *%rcx
+  leaq f(%rip), %rcx
+  movq %rcx, %r11
+  movq 8(%r11), %rdx
+  movq %rcx, %rdi
+  callq *%rdx
   movq %rax, %rdx
   movq %rdx, %rdi
   callq print_int

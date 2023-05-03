@@ -391,7 +391,7 @@ def convert_to_closures(prog: Program) -> Program:
                 case FunctionDef(name, params, body, return_type):
                     # Free variables of inner functions count towards the outer function free variable minus the parameters
                     free_vars.update(ff_stmts(body, bound_vars.union(
-                        [param[0] for param in params])))
+                        [param[0] for param in params]).union({name})))
                     bound_vars.update({name})
                 case _:
                     pass
@@ -400,12 +400,14 @@ def convert_to_closures(prog: Program) -> Program:
 
     def cc_exp(exp: Expr, closure: List[str]) -> List[Expr]:
         match exp:
+            case Var(function_name) if function_name + '_fun' in closure:
+                return [Var('closure')]
             case Var(x):
                 return [exp]
             case Constant(n):
                 return [exp]
             case Prim(op, exps):
-                new_exps = [cc_exp(e, closure) for e in exps]
+                new_exps = [cc_exp(e, closure)[0] for e in exps]
                 return [Prim(op, new_exps)]
             case Call(e, exps):
                 temp = gensym('tmp')
@@ -422,7 +424,7 @@ def convert_to_closures(prog: Program) -> Program:
                 function_names.add(new_name)
                 closure = [new_name]
                 free_variables = ff_stmts(
-                    body, set([param[0] for param in params]))
+                    body, set([param[0] for param in params]).union({name}))
                 closure.extend(free_variables)
                 new_body = []
                 new_body.extend([Assign(x, Prim('subscript', [Var('closure'), Constant(
@@ -878,8 +880,13 @@ def select_instructions(prog: cfun.CProgram) -> X86ProgramDefs:
 
     def si_stmt(stmt: cfun.Stmt) -> List[x86.Instr]:
         match stmt:
-            case cfun.Assign(x, cfun.Var(f)) if f in function_names:
-                return [x86.NamedInstr('leaq', [x86.GlobalVal(f), x86.Var(x)])]
+            case cfun.Assign(x, cfun.Prim('tuple_set', [cfun.Var(closure), cfun.Constant(offset), cfun.Var(f)])) if f in function_names:
+                temp = gensym('temp')
+                offset_bytes = 8 * (int(offset) + 1)
+                return [x86.NamedInstr('leaq', [x86.GlobalVal(f), x86.Var(temp)]),
+                        x86.NamedInstr(
+                            'movq', [x86.Var(closure), x86.Reg('r11')]),
+                        x86.NamedInstr('movq', [x86.Var(temp), x86.Deref('r11', offset_bytes)])]
             case cfun.Assign(x, cfun.Call(fun, args)):
                 arg_instrs = [x86.NamedInstr('movq', [si_atm(a), x86.Reg(r)])
                               for a, r in zip(args, constants.argument_registers)]

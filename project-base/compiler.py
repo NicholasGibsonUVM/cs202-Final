@@ -1,3 +1,20 @@
+"""
+Contributors: Jared Krogsrud, Nick Gibson
+
+Completed so far:
+We've implemented most of the new pass "convert_to_closures"
+in which we've created several functions to help with the pass.
+Two functions ff_stmt and ff_exp recursively look for free variables
+within a certain context.
+The second set of functions uses these free variables to construct closures
+and transform functions to use these closures. This part is mostly complete
+but with significant debugging to do.
+
+We still need to edit select instructions, we also still hope to approach
+lambda functions.
+"""
+
+
 from typing import Set, Dict, Tuple
 import sys
 import traceback
@@ -62,6 +79,11 @@ def gensym(x):
 class Callable:
     args: List[type]
     output_type: type
+
+@dataclass
+class Closure:
+    name: str
+    free_vars: Set[str]
 
 
 TEnv = Dict[str, Callable | Tuple | type]
@@ -348,6 +370,11 @@ def rco(prog: Program) -> Program:
 
 
 def convert_to_closures(prog: Program) -> Program:
+    """
+    Convert to closures:
+    :param prog: An Ltup program
+    :return: An Ltup program with functions with a closure.
+    """
 
     def ff_exp(e: Expr, bound_vars: Set[str]) -> Set[str]:
         match e:
@@ -420,19 +447,37 @@ def convert_to_closures(prog: Program) -> Program:
         match stmt:
             case FunctionDef(name, params, body, return_type):
                 new_name = name + '_fun'
+
+                # Update the function_names with new name
                 function_names.remove(name)
                 function_names.add(new_name)
+
+                # Start creation of the new closure tuple (as list so we can build it)
                 closure = [new_name]
+
+                # Find free variables within the body, passing in set of "bound" variables, i.e those located in
+                # parameters
                 free_variables = ff_stmts(
                     body, set([param[0] for param in params]).union({name}))
                 closure.extend(free_variables)
+
+                # We need to update the body of the function so that the first statement within
+                # is setting the values for all free variables
                 new_body = []
                 new_body.extend([Assign(x, Prim('subscript', [Var('closure'), Constant(
                     i)])) for i, x in enumerate(closure) if i != 0])
+
+                # Using the closure
                 for stmt in body:
                     new_body.extend(cc_stmt(stmt, closure))
+
+                # Add the closure to the parameters with type "Closure"
                 params.append(("closure", "Closure"))
+
+                # What's happening here again?
                 tuple_var_types[name] = [None for _ in range(len(closure))]
+
+                # Do we need add the variable names or values to the closure?
                 return [FunctionDef(new_name, params, new_body, return_type),
                         Assign(name, Prim('tuple', [Var(x) for x in closure]))]
             case Assign(x, e):

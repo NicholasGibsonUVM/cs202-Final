@@ -55,8 +55,8 @@ def eval_Lif(prog: Module) -> List[int]:
         
     def eval_e(e: expr, env: Dict[str, any]) -> any:
         match e:
-            case Call(Name(fun_name), args):
-                fv = env[fun_name]
+            case Call(e1, args):
+                fv: FunVal = eval_e(e1, env)
                 arg_vals = [eval_e(a, env) for a in args]
                 new_env = env.copy()
                 new_env.update(fv.env)
@@ -64,7 +64,6 @@ def eval_Lif(prog: Module) -> List[int]:
                     new_env[a] = v
                 retval = eval_stmts(fv.body, new_env)
                 return retval
-
             case Constant(i):
                 return i
             case Name(x):

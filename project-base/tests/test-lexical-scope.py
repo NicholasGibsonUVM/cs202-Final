@@ -1,8 +1,8 @@
 x = 5
 
-def f() -> int:
+def f() -> Callable[[], int]:
     def g() -> int:
         return x
-    return g()
+    return g
 
-print(f())
+print(f()())

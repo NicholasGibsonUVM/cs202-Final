@@ -7,7 +7,7 @@ x = 6
 
 def g(a: int) -> int:
     y = 20
-    anonymous = lambda z: x + y + z + a
+    anonymous: Callable[[int], int] = lambda z: x + y + z + a
     y = 0
     a = 3
     return anonymous(a)

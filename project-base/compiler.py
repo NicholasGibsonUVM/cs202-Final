@@ -68,17 +68,12 @@ def gensym(x):
 # op     ::= "add" | "sub" | "mult" | "not" | "or" | "and" | "eq" | "gt" | "gte" | "lt" | "lte"
 #          | "tuple" | "subscript"
 # Expr   ::= Var(x) | Constant(n) | Prim(op, List[Expr]) | Begin(Stmts, Expr)
-#          | Call(Expr, List[Expr]) | Lambda(List[Tuple[str, type]], Expr)
+#          | Call(Expr, List[Expr]) | Callable(List[type], type)
 # Stmt   ::= Assign(x, Expr) | Print(Expr) | If(Expr, Stmts, Stmts) | While(Expr, Stmts)
 #          | Return(Expr) | FunctionDef(str, List[Tuple[str, type]], List[Stmt], type)
 #          | AnnAssign(Var, Type, Expr, 0)
 # Stmts  ::= List[Stmt]
 # LFun   ::= Program(Stmts)
-
-@dataclass
-class Callable:
-    args: List[type]
-    output_type: type
 
 @dataclass
 class Closure:

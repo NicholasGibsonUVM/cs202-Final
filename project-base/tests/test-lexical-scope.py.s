@@ -24,20 +24,16 @@ g_funconclusion:
   popq %rbp
   retq
 f_funlabel_14:
-  movq free_ptr(%rip), %rdx
+  movq free_ptr(%rip), %rcx
   addq $24, free_ptr(%rip)
-  movq %rdx, %r11
+  movq %rcx, %r11
   movq $5, 0(%r11)
-  movq %rdx, %r11
-  movq %r12, 8(%r11)
-  movq %rdx, %r11
+  leaq g_fun(%rip), %rdx
+  movq %rcx, %r11
+  movq %rdx, 8(%r11)
+  movq %rcx, %r11
   movq %rbx, 16(%r11)
-  leaq g(%rip), %rdx
-  movq %rdx, %r11
-  movq 8(%r11), %rcx
-  movq %rdx, %rdi
-  callq *%rcx
-  movq %rax, %rdx
+  movq %rcx, %rdx
   movq %rdx, %rax
   jmp f_funconclusion
 f_funlabel_15:
@@ -49,7 +45,8 @@ f_funlabel_16:
   jmp f_funlabel_14
 f_funstart:
   movq %rdi, %rdx
-  movq $3, %rbx
+  movq %rdx, %r11
+  movq 16(%r11), %rbx
   movq free_ptr(%rip), %rax
   addq $24, %rax
   movq %rax, %rdx
@@ -80,16 +77,24 @@ f_funconclusion:
   retq
 mainlabel_11:
   movq free_ptr(%rip), %rdx
-  addq $16, free_ptr(%rip)
+  addq $24, free_ptr(%rip)
   movq %rdx, %r11
-  movq $3, 0(%r11)
+  movq $5, 0(%r11)
+  leaq f_fun(%rip), %rcx
   movq %rdx, %r11
-  movq %rbx, 8(%r11)
-  leaq f(%rip), %rcx
-  movq %rcx, %r11
-  movq 8(%r11), %rdx
-  movq %rcx, %rdi
-  callq *%rdx
+  movq %rcx, 8(%r11)
+  movq %rdx, %r11
+  movq %rbx, 16(%r11)
+  movq %rdx, %rdx
+  movq %rdx, %r11
+  movq 8(%r11), %rcx
+  movq %rdx, %rdi
+  callq *%rcx
+  movq %rax, %rdx
+  movq %rdx, %r11
+  movq 8(%r11), %rcx
+  movq %rdx, %rdi
+  callq *%rcx
   movq %rax, %rdx
   movq %rdx, %rdi
   callq print_int
@@ -99,13 +104,13 @@ mainlabel_12:
   jmp mainlabel_11
 mainlabel_13:
   movq %r15, %rdi
-  movq $16, %rsi
+  movq $24, %rsi
   callq collect
   jmp mainlabel_11
 mainstart:
-  movq $5, %rdx
+  movq $5, %rbx
   movq free_ptr(%rip), %rax
-  addq $16, %rax
+  addq $24, %rax
   movq %rax, %rdx
   cmpq fromspace_end(%rip), %rdx
   setl %al
